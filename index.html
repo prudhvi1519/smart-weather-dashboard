@@ -9,8 +9,9 @@
     <style>
         :root {
             --primary: #4a90e2;
-            --secondary: #50e3c2;
+            --secondary: #3f9e8a;
             --accent: #ff6b6b;
+            --page-bg: #f4f7fc;
             --sunny-bg: linear-gradient(135deg, #f6d365, #fda085);
             --rainy-bg: linear-gradient(135deg, #5b86e5, #36d1dc);
             --cloudy-bg: linear-gradient(135deg, #bdc3c7, #2c3e50);
@@ -31,7 +32,7 @@
         }
         body {
             font-family: 'Poppins', sans-serif;
-            background: var(--sunny-bg);
+            background: var(--page-bg);
             min-height: 100vh;
             color: var(--text);
             padding: 20px;
@@ -40,13 +41,6 @@
             justify-content: center;
             overflow-x: hidden;
             animation: gradientShift 10s ease-in-out infinite;
-        }
-        @keyframes gradientShift {
-            0% { background: var(--sunny-bg); }
-            25% { background: var(--rainy-bg); }
-            50% { background: var(--cloudy-bg); }
-            75% { background: var(--snowy-bg); }
-            100% { background: var(--sunny-bg); }
         }
         .container {
             background: var(--card-bg);
