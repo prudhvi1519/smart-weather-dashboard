@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Weather Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        #weatherCanvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: all 0.5s ease;
+        }
+        .weather-info, .forecast {
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+        .weather-info.visible, .forecast.visible {
+            opacity: 1;
+        }
+        .toggle-unit, .search {
+            text-align: center;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Weather Dashboard</h1>
+        <div class="search">
+            <input type="text" id="cityInput" placeholder="Enter city name">
+            <button onclick="searchWeather()">Search</button>
+            <button onclick="refreshLocationWeather()">Use My Location</button>
+        </div>
+        <canvas id="weatherCanvas" width="300" height="200"></canvas>
+        <div class="weather-info" id="weatherInfo"></div>
+        <div class="toggle-unit">
+            <button onclick="toggleUnit()">Toggle °C/°F</button>
+        </div>
+        <div class="forecast" id="forecast">Loading hourly forecast...</div>
+        <div class="loader" id="loader"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('weatherCanvas');
+        const ctx = canvas.getContext('2d');
+        const weatherInfo = document.getElementById('weatherInfo');
+        const forecast = document.getElementById('forecast');
+        const loader = document.getElementById('loader');
+        let isCelsius = true;
+        let weatherData = null;
+        let animationId;
+
+        // Geolocation API: Get user's location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(fetchWeather, showError);
+            } else {
+                weatherInfo.innerHTML = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        // Fetch weather data from OpenWeatherMap
+        function fetchWeather(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const apiKey = '8272a98d9a5305bdef2186b8de800dd2';
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+            loadWeatherData(url);
+        }
+
+        // Search weather by city name
+        function searchWeather() {
+            const city = document.getElementById('cityInput').value;
+            const apiKey = '8272a98d9a5305bdef2186b8de800dd2';
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+            loadWeatherData(url);
+        }
+
+        // Load weather data
+        function loadWeatherData(url) {
+            loader.style.display = 'block';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    weatherData = data;
+                    displayWeather();
+                    animateWeather(data.weather[0].main);
+                    loader.style.display = 'none';
+                })
+                .catch(error => {
+                    weatherInfo.innerHTML = "Failed to fetch weather data.";
+                    console.error(error);
+                    loader.style.display = 'none';
+                });
+        }
+
+        // Display weather information
+        function displayWeather() {
+            const temp = isCelsius ? weatherData.main.temp : (weatherData.main.temp * 9/5) + 32;
+            const unit = isCelsius ? '°C' : '°F';
+            weatherInfo.innerHTML = `
+                <h2>${weatherData.name}</h2>
+                <p>Temperature: ${temp.toFixed(1)} ${unit}</p>
+                <p>Weather: ${weatherData.weather[0].description}</p>
+            `;
+            weatherInfo.classList.add('visible');
+        }
+
+        // Canvas API: Animate weather visuals
+        function animateWeather(condition) {
+            cancelAnimationFrame(animationId);
+            let x = 0;
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (condition.includes('Rain')) {
+                    ctx.fillStyle = 'blue';
+                    for (let i = 0; i < 20; i++) {
+                        ctx.fillRect((x + i * 15) % canvas.width, Math.random() * canvas.height, 2, 10);
+                    }
+                } else if (condition.includes('Cloud')) {
+                    ctx.fillStyle = 'gray';
+                    ctx.beginPath();
+                    ctx.arc((x % canvas.width), 100, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = 'yellow';
+                    ctx.beginPath();
+                    ctx.arc(150, 100, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                x += 2;
+                animationId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // Intersection Observer API: Lazy-load forecast
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    loadForecast();
+                    observer.unobserve(forecast);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        observer.observe(forecast);
+
+        function loadForecast() {
+            const lat = weatherData.coord.lat;
+            const lon = weatherData.coord.lon;
+            const apiKey = '8272a98d9a5305bdef2186b8de800dd2';
+            const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    forecast.innerHTML = '<h3>Hourly Forecast</h3>' + data.list.slice(0, 5).map(item => {
+                        const temp = isCelsius ? item.main.temp : (item.main.temp * 9/5) + 32;
+                        const unit = isCelsius ? '°C' : '°F';
+                        return `<p>${new Date(item.dt * 1000).toLocaleTimeString()}: ${temp.toFixed(1)} ${unit}, ${item.weather[0].description}</p>`;
+                    }).join('');
+                    forecast.classList.add('visible');
+                });
+        }
+
+        // Toggle temperature unit
+        function toggleUnit() {
+            isCelsius = !isCelsius;
+            displayWeather();
+            if (forecast.classList.contains('visible')) loadForecast();
+        }
+
+        // Refresh weather using current location
+        function refreshLocationWeather() {
+            document.getElementById('cityInput').value = '';
+            getLocation();
+        }
+
+        function showError(error) {
+            weatherInfo.innerHTML = "Unable to retrieve your location.";
+            console.error(error);
+        }
+
+        // Network Information API: Adjust visuals based on network speed
+        if (navigator.connection) {
+            const connection = navigator.connection;
+            if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+                canvas.width = 150;
+                canvas.height = 100;
+            }
+        }
+
+        // Background Tasks API: Schedule background updates
+        function scheduleWeatherUpdate() {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    getLocation();
+                    setTimeout(scheduleWeatherUpdate, 60000); // Update every minute
+                });
+            } else {
+                setTimeout(scheduleWeatherUpdate, 60000);
+            }
+        }
+
+        // Start the app
+        getLocation();
+        scheduleWeatherUpdate();
+    </script>
+</body>
+</html>
